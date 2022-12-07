@@ -1,0 +1,6 @@
+# gitignore file
+
+CMakeLists.txt
+include
+package.xml
+src

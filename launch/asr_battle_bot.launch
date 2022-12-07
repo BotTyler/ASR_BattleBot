@@ -1,0 +1,29 @@
+<launch>
+	<arg name='roboname' default='jarboe' doc='Name of Robot' />
+	<arg name='lasername' default='scan' doc='Name of Robot' />
+	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
+	<node pkg="canyon_run" name="spawnrobot" type="spawnRobot.py" output="screen">
+		<param name='roboname' value="$(arg roboname)" />
+	</node>
+	<node pkg="maze_runner" name="stateTracker" type="stateTracker.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+ 	<node pkg="maze_runner" name="mostOpenPath" type="mostOpenPath.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="maze_runner" name="wallFollowRight" type="wallFollowRight.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="maze_runner" name="wallFollowLeft" type="wallFollowLeft.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="maze_runner" name="grabPoint" type="grabPoint.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+
+</launch>
