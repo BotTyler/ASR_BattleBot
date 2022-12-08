@@ -25,5 +25,8 @@
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
 	</node>
-
+	<node pkg="ASR_battle_bots" name="attackPlayer2" type="attackPlayer.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
 </launch>

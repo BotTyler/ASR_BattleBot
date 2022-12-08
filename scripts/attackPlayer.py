@@ -16,8 +16,17 @@ class sensorData:
 		self.roboName = name
 		self.hasData = False
 		self.hasPlayerFinderData = False
+		self.checkFire = True
 		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
 		rospy.Subscriber("/"+self.roboName+"/closestPlayer", BoundingBox3d, self.playerFinderCallback)
+		rospy.Subscriber("/"+name+"/canshoot", Int32, self.checkFireCallback)
+
+	
+	def checkFireCallback(self,data):
+		self.checkFire = data == Int32(1)
+
+	def canFire(self):
+		return self.checkFire
 
 	def callback(self, data):
 		self.dataPack = data
@@ -54,6 +63,9 @@ class sensorData:
 	def getPlayerRotation(self):
 		return -self.playerFinderData.center.position.y
 
+	def getPlayerSize(self):
+		return self.playerFinderData.size.y
+
 	
 # class to calculate the next movement of the robot
 class grabObjState:
@@ -69,7 +81,7 @@ class grabObjState:
 		return scaledVert
 
 	def calcTwist(self, myRanges, lenRanges):
-		mSpeed = 0
+		mSpeed = 1
 		# get data
 		angleIncrement = self.sensorDataObj.getAngleIncrement()
 		angleMin = self.sensorDataObj.getAngleMin()
@@ -82,7 +94,7 @@ class grabObjState:
 		counter = 0
 
 		vertMovement = 0
-
+		
 
 		for x in myRanges:
 			curRange = x
@@ -97,8 +109,8 @@ class grabObjState:
 		vertMovement /= len(myRanges)
 
 		rTwist = Twist()
-
-		rTwist.linear.x = vertMovement*mSpeed
+		size = self.sensorDataObj.getPlayerSize()
+		rTwist.linear.x = self.clamp(8-size, -1, 1)
 		rTwist.angular.z = self.clamp(hRotation, -1, 1)
 		return rTwist
 
@@ -115,6 +127,17 @@ class grabObjState:
 	def clamp(self, n, minn, maxn):
 		return max(min(maxn, n), minn)
 
+	def canShoot(self):
+		hasData = self.sensorDataObj.isDataAvail() and self.sensorDataObj.isPlayerFinderDataAvail()
+		if hasData:
+			hRotation = self.sensorDataObj.getPlayerRotation()
+			size = self.sensorDataObj.getPlayerSize()
+			canFire = self.sensorDataObj.canFire()
+			if canFire and size >= 7 and hRotation <= .2:
+				return True
+		else:
+			return False
+
 
 
 
@@ -125,21 +148,20 @@ class grabObjectController:
 		self.roboName = name
 		self.laserName = laser
 
-		
+
 		self.pub = rospy.Publisher("/"+str(name)+"/cmd_vel", Twist, queue_size = 10)
 		self.FirePub = rospy.Publisher("/"+str(name)+"/cannon", String, queue_size = 10)
 		
-		rospy.Subscriber("/"+name+"/canshoot", Int32, self.checkFireCallback)
-		rospy.Subscriber("/"+name+"/attackPlayer",Int32, self.grabObjectCallback)
+
+		rospy.Subscriber("/"+name+"/attackPlayer",Int32, self.attackPlayerCallback)
 		self.rate = rospy.Rate(10)
 		self.grabObjStateObj = grabObjState(name, laser)
 		self.isActive = False
-		self.canFire = True
 
-	def checkFireCallback(self,data):
-		self.canFire = data == Int32(1)
 
-	def grabObjectCallback(self, data):
+
+
+	def attackPlayerCallback(self, data):
 		self.isActive = data == Int32(1)
 
 	def run(self):
@@ -147,7 +169,7 @@ class grabObjectController:
 			if self.isActive:
 				movementTwist = self.grabObjStateObj.determineMovement()
 				self.pub.publish(movementTwist)
-				if self.canFire:
+				if self.grabObjStateObj.canShoot():
 					self.FirePub.publish("Fire")
 			self.rate.sleep()
 			

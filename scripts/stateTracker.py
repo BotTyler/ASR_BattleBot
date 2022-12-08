@@ -46,6 +46,8 @@ class sensorData:
 		self.curHP = 5
 
 		self.pointPub = rospy.Publisher("/"+self.roboName+"/closestPoint", BoundingBox3d, queue_size = 10)
+		self.playerPub = rospy.Publisher("/"+self.roboName+"/closestPlayer", BoundingBox3d, queue_size = 10)
+		
 		self.mTimer = myTimer(.01)
 		self.mTimer.startTimer()
 		self.lastHFCheck = -9999
@@ -74,7 +76,7 @@ class sensorData:
 			self.lastPFCheck = self.mTimer.getDuration()
 		else:
 			if self.isPlayerFinderInView():
-				if self.getPFSize(self.healthFinderData) <= self.getPFSize(data):
+				if self.getPFSize(self.playerFinderData) <= self.getPFSize(data):
 					self.playerFinderData = data
 					self.lastPFCheck = self.mTimer.getDuration()
 				else:
@@ -82,7 +84,7 @@ class sensorData:
 			else:
 				self.playerFinderData = data
 				self.lastPFCheck = self.mTimer.getDuration()
-		self.pointPub.publish(self.playerFinderData)
+		self.playerPub.publish(self.playerFinderData)
 		self.hasPlayerFinderData = True
 	def callback(self, data):
 		self.dataPack = data
