@@ -130,10 +130,16 @@ class grabObjectController:
 
 		
 		self.pub = rospy.Publisher("/"+str(name)+"/cmd_vel", Twist, queue_size = 10)
+		self.FirePub = rospy.Publisher("/"+str(name)+"/cannon", String, queue_size = 10)
+		
+		rospy.Subscriber("/"+name+"/canshoot", Int32, self.checkFireCallback)
 		rospy.Subscriber("/"+name+"/attackPlayer",Int32, self.grabObjectCallback)
 		self.rate = rospy.Rate(10)
 		self.grabObjStateObj = grabObjState(name, laser)
 		self.isActive = False
+
+	def checkFireCallback(self,data):
+		self.canFire = data == Int32(1)
 
 	def grabObjectCallback(self, data):
 		self.isActive = data == Int32(1)
@@ -142,7 +148,9 @@ class grabObjectController:
 		while not rospy.is_shutdown():
 			if self.isActive:
 				movementTwist = self.grabObjStateObj.determineMovement()
-				self.pub.publish(movementTwist)	
+				self.pub.publish(movementTwist)
+				if self.canFire:
+					self.FirePub.publish("Fire")
 			self.rate.sleep()
 			
 
