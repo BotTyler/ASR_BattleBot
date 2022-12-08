@@ -39,6 +39,8 @@ class sensorData:
 		self.hasHealthFinderData = False
 		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
 		rospy.Subscriber("/"+self.roboName+"/healthfinder", BoundingBox3d, self.healthFinderCallback)
+		rospy.Subscriber("/"+self.roboName+"/playerfinder", BoundingBox3d, self.playerFinderCallback)
+		rospy.Subscriber("/"+self.roboName+"/hp", Int32, self.hpCallBack)
 
 		self.pointPub = rospy.Publisher("/"+self.roboName+"/closestPoint", BoundingBox3d, queue_size = 10)
 		self.mTimer = myTimer(.01)
@@ -62,9 +64,28 @@ class sensorData:
 		self.pointPub.publish(self.healthFinderData)
 		self.hasHealthFinderData = True
 
+	def playerFinderCallback(self, data):
+		if not self.hasPlayerFinderData:
+			self.PlayerFinderData = data
+			self.lastPFCheck = self.mTimer.getDuration()
+		else:
+			if self.isPlayerFinderInView():
+				if self.getPFSize(self.healthFinderData) <= self.getPFSize(data):
+					self.PlayerFinderData = data
+					self.lastPFCheck = self.mTimer.getDuration()
+				else:
+					pass # at this point there is a bigger blob alerady in view so go to the one first
+			else:
+				self.PlayerFinderData = data
+				self.lastPFCheck = self.mTimer.getDuration()
+		self.pointPub.publish(self.PlayerFinderData)
+		self.hasPlayerFinderData = True
 	def callback(self, data):
 		self.dataPack = data
 		self.hasData = True
+	def hpCallBack(self, data):
+		self.hp = data.data
+		
 	
 	#region sensor data
 	def getSensorData(self):
@@ -108,6 +129,27 @@ class sensorData:
 
 	#endregion
 	def isHealthFinderDataAvail(self):
+		return self.hasHealthFinderData
+
+	#region playerFinderData
+	def isPlayerFinderInView(self):
+		curTime = self.mTimer.getDuration()
+		diff = curTime - self.lastHFCheck
+		if diff > 1:
+			return False
+		else:
+			return True
+
+
+	def getPFRotation(self):
+		return self.healthFinderData.position.y
+
+	def getPFSize(self, data):
+		# need to figure out how the sizes work
+		return data.size.y * data.size.z
+
+	#endregion
+	def isPlayerFinderDataAvail(self):
 		return self.hasHealthFinderData
 
 # class that handles the movement functions
@@ -176,10 +218,12 @@ class mazeRunnerController:
 				#self.startWallRight()
 				#print("Wall Left")
 		else:
-			if self.sensorDataObj.isHealthFinderInView():
+			if self.sensorDataObj.isHealthFinderInView() and self.sensorDataObj.isHealthFinderInView() != True :
 				self.startGrabPoint()
 				#print("Grab Point")
 				#print("OO I FOUND AN OBJECT TO GRAB")
+			elif self.sensorDataObj.isHealthFinderInView() != True and self.sensorDataObj.isHealthFinderInView():
+				self.startShootPlayer
 			else:
 				self.startOpenFollow()
 				#print("Open Follow")
