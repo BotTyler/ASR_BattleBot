@@ -17,15 +17,15 @@ class sensorData:
 		self.hasData = False
 		self.hasHealthFinderData = False
 		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
-		rospy.Subscriber("/"+self.roboName+"/closestPoint", BoundingBox3d, self.healthFinderCallback)
+		rospy.Subscriber("/"+self.roboName+"/closestPlayer", BoundingBox3d, self.playerFinderCallback)
 
 	def callback(self, data):
 		self.dataPack = data
 		self.hasData = True
 
-	def healthFinderCallback(self, data):
-		self.healthFinderData = data
-		self.hasHealthFinderData = True
+	def playerFinderCallback(self, data):
+		self.playerFinderData = data
+		self.hasPlayerFinderData = True
 
 	def getSensorData(self):
 		return self.dataPack.ranges
@@ -49,10 +49,10 @@ class sensorData:
 		return self.hasData
 
 	def isHealthFinderDataAvail(self):
-		return self.hasHealthFinderData
+		return self.hasPlayerFinderData
 
 	def getHFRotation(self):
-		return -self.healthFinderData.center.position.y
+		return -self.playerFinderData.center.position.y
 
 	def getHFSize(self):
 		# need to figure out how the sizes work
@@ -72,7 +72,7 @@ class grabObjState:
 		return scaledVert
 
 	def calcTwist(self, myRanges, lenRanges):
-		mSpeed = 5
+		mSpeed = 0
 		# get data
 		angleIncrement = self.sensorDataObj.getAngleIncrement()
 		angleMin = self.sensorDataObj.getAngleMin()
@@ -130,7 +130,7 @@ class grabObjectController:
 
 		
 		self.pub = rospy.Publisher("/"+str(name)+"/cmd_vel", Twist, queue_size = 10)
-		rospy.Subscriber("/"+name+"/grabObject",Int32, self.grabObjectCallback)
+		rospy.Subscriber("/"+name+"/attackPlayer",Int32, self.grabObjectCallback)
 		self.rate = rospy.Rate(10)
 		self.grabObjStateObj = grabObjState(name, laser)
 		self.isActive = False
