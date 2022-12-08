@@ -15,7 +15,7 @@ class sensorData:
 	def __init__(self, name, laserName):
 		self.roboName = name
 		self.hasData = False
-		self.hasHealthFinderData = False
+		self.hasPlayerFinderData = False
 		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
 		rospy.Subscriber("/"+self.roboName+"/closestPlayer", BoundingBox3d, self.playerFinderCallback)
 
@@ -48,15 +48,12 @@ class sensorData:
 	def isDataAvail(self):
 		return self.hasData
 
-	def isHealthFinderDataAvail(self):
+	def isPlayerFinderDataAvail(self):
 		return self.hasPlayerFinderData
 
-	def getHFRotation(self):
+	def getPlayerRotation(self):
 		return -self.playerFinderData.center.position.y
 
-	def getHFSize(self):
-		# need to figure out how the sizes work
-		return 7
 	
 # class to calculate the next movement of the robot
 class grabObjState:
@@ -78,7 +75,7 @@ class grabObjState:
 		angleMin = self.sensorDataObj.getAngleMin()
 		rangeMax = self.sensorDataObj.getRangeMax()
 
-		hRotation = self.sensorDataObj.getHFRotation()
+		hRotation = self.sensorDataObj.getPlayerRotation()
 
 		# set basic variables
 		vertSum = 0
@@ -108,7 +105,7 @@ class grabObjState:
 
 
 	def determineMovement(self):
-		hasData = self.sensorDataObj.isDataAvail() and self.sensorDataObj.isHealthFinderDataAvail()
+		hasData = self.sensorDataObj.isDataAvail() and self.sensorDataObj.isPlayerFinderDataAvail()
 		mTwist = Twist()
 		if hasData == True:
 			sensorRanges = self.sensorDataObj.getSensorData()
@@ -137,6 +134,7 @@ class grabObjectController:
 		self.rate = rospy.Rate(10)
 		self.grabObjStateObj = grabObjState(name, laser)
 		self.isActive = False
+		self.canFire = True
 
 	def checkFireCallback(self,data):
 		self.canFire = data == Int32(1)

@@ -36,20 +36,15 @@ class sensorData:
 		self.roboName = name
 		self.hasData = False
 		self.hasHealthFinderData = False
-		self.hasPlayerFinderData = False
-
 		rospy.Subscriber("/"+self.roboName+"/"+laserName, LaserScan, self.callback)
 		rospy.Subscriber("/"+self.roboName+"/healthfinder", BoundingBox3d, self.healthFinderCallback)
 		rospy.Subscriber("/"+self.roboName+"/playerfinder", BoundingBox3d, self.playerFinderCallback)
 		rospy.Subscriber("/"+self.roboName+"/hp", Int32, self.hpCallBack)
 
-		self.curHP = 5
-
 		self.pointPub = rospy.Publisher("/"+self.roboName+"/closestPoint", BoundingBox3d, queue_size = 10)
 		self.mTimer = myTimer(.01)
 		self.mTimer.startTimer()
 		self.lastHFCheck = -9999
-		self.lastPFCheck = -9999
 	
 	def healthFinderCallback(self, data):
 		if not self.hasHealthFinderData:
@@ -70,26 +65,26 @@ class sensorData:
 
 	def playerFinderCallback(self, data):
 		if not self.hasPlayerFinderData:
-			self.playerFinderData = data
+			self.PlayerFinderData = data
 			self.lastPFCheck = self.mTimer.getDuration()
 		else:
 			if self.isPlayerFinderInView():
 				if self.getPFSize(self.healthFinderData) <= self.getPFSize(data):
-					self.playerFinderData = data
+					self.PlayerFinderData = data
 					self.lastPFCheck = self.mTimer.getDuration()
 				else:
 					pass # at this point there is a bigger blob alerady in view so go to the one first
 			else:
-				self.playerFinderData = data
+				self.PlayerFinderData = data
 				self.lastPFCheck = self.mTimer.getDuration()
-		self.pointPub.publish(self.playerFinderData)
+		self.pointPub.publish(self.PlayerFinderData)
 		self.hasPlayerFinderData = True
 	def callback(self, data):
 		self.dataPack = data
 		self.hasData = True
 
 	def hpCallBack(self, data):
-		self.curHP = data
+		self.hp = data.data
 		
 	
 	#region sensor data
@@ -113,11 +108,6 @@ class sensorData:
 
 	def isDataAvail(self):
 		return self.hasData
-	#endregion
-
-	#region HP
-	def getHP(self):
-		return self.curHP
 	#endregion
 
 	#region healthFinderData
@@ -144,7 +134,7 @@ class sensorData:
 	#region playerFinderData
 	def isPlayerFinderInView(self):
 		curTime = self.mTimer.getDuration()
-		diff = curTime - self.lastPFCheck
+		diff = curTime - self.lastHFCheck
 		if diff > 1:
 			return False
 		else:
@@ -152,7 +142,7 @@ class sensorData:
 
 
 	def getPFRotation(self):
-		return self.playerFinderData.position.y
+		return self.healthFinderData.position.y
 
 	def getPFSize(self, data):
 		# need to figure out how the sizes work
@@ -160,10 +150,10 @@ class sensorData:
 
 	#endregion
 	def isPlayerFinderDataAvail(self):
-		return self.hasPlayerFinderData
+		return self.hasHealthFinderData
 
 # class that handles the movement functions
-class battleBotController:
+class batlleBotController:
 
 	def __init__(self, name, laser):
 		self.roboName = name
@@ -173,7 +163,6 @@ class battleBotController:
 		self.wallRightPub = rospy.Publisher("/"+str(name)+"/wallRight", Int32, queue_size = 10)
 		self.mostOpenPathPub = rospy.Publisher("/"+str(name)+"/mostOpenPath", Int32, queue_size = 10)
 		self.grabObjectPub = rospy.Publisher("/"+str(name)+"/grabObject", Int32, queue_size = 10)
-		self.attackPlayerPub = rospy.Publisher("/"+str(name)+"/attackPlayer", Int32, queue_size = 10)
 		self.rate = rospy.Rate(10)
 		
 		self.sensorDataObj = sensorData(self.roboName, self.laserName)
@@ -229,17 +218,12 @@ class battleBotController:
 				#self.startWallRight()
 				#print("Wall Left")
 		else:
-			if self.sensorDataObj.isHealthFinderInView() and not self.sensorDataObj.isPlayerFinderInView():
+			if self.sensorDataObj.isHealthFinderInView() and self.sensorDataObj.isHealthFinderInView() != True :
 				self.startGrabPoint()
 				#print("Grab Point")
 				#print("OO I FOUND AN OBJECT TO GRAB")
-			elif not self.sensorDataObj.isHealthFinderInView() and self.sensorDataObj.isPlayerFinderInView():
-				self.startAttackPlayer()
-			elif self.sensorDataObj.isHealthFinderInView() and self.sensorDataObj.isPlayerFinderInView():
-				if self.sensorDataObj.getHP() <= 2:
-					self.startGrabPoint()
-				else:
-					self.startAttackPlayer()
+			elif self.sensorDataObj.isHealthFinderInView() != True and self.sensorDataObj.isHealthFinderInView():
+				self.startShootPlayer
 			else:
 				self.startOpenFollow()
 				#print("Open Follow")
@@ -257,50 +241,35 @@ class battleBotController:
 		self.wallRightPub.publish(Int32(0))
 		self.mostOpenPathPub.publish(Int32(0))
 		self.grabObjectPub.publish(Int32(0))
-		self.attackPlayerPub.publish(Int32(0))
 		self.wallLeftPub.publish(Int32(1))
-		print("STATE: wall left")
 
 	def startWallRight(self):
 		self.wallLeftPub.publish(Int32(0))
 		self.mostOpenPathPub.publish(Int32(0))
 		self.grabObjectPub.publish(Int32(0))
-		self.attackPlayerPub.publish(Int32(0))
 		self.wallRightPub.publish(Int32(1))
-		print("STATE: wall right")
 
 	def startOpenFollow(self):
 		self.wallLeftPub.publish(Int32(0))
 		self.wallRightPub.publish(Int32(0))
 		self.grabObjectPub.publish(Int32(0))
-		self.attackPlayerPub.publish(Int32(0))
 		self.mostOpenPathPub.publish(Int32(1))
-		print("STATE: open follow")
 
 	def startGrabPoint(self):
 		self.wallLeftPub.publish(Int32(0))
 		self.wallRightPub.publish(Int32(0))
 		self.mostOpenPathPub.publish(Int32(0))
-		self.attackPlayerPub.publish(Int32(0))
 		self.grabObjectPub.publish(Int32(1))
-		print("STATE: grab point")
-	
-	def startAttackPlayer(self):
-		self.wallLeftPub.publish(Int32(0))
-		self.wallRightPub.publish(Int32(0))
-		self.mostOpenPathPub.publish(Int32(0))
-		self.grabObjectPub.publish(Int32(0))
-		self.attackPlayerPub.publish(Int32(1))
-		print("STATE: ATTACK PLAYER")
 
 	
 # start of main
 if __name__ == '__main__':
 	rospy.init_node("Controller", anonymous=True)
-	robotName = rospy.get_param("~roboname")
-	laserName = rospy.get_param("~lasername")
+	#robotName = rospy.get_param("~roboname")
+	#laserName = rospy.get_param("~lasername")
 	try:
-		battleBotObj = battleBotController(robotName, laserName)
+		#battleBotObj = battleBotController(robotName, laserName)
+		battleBotObj = battleBotController("jarboe", "scan")
 		battleBotObj.run()
 	except rospy.ROSInterruptException:
 		print("ERROR: something happened")
