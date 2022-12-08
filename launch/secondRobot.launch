@@ -2,26 +2,26 @@
 	<arg name='roboname' default='jarboe' doc='Name of Robot' />
 	<arg name='lasername' default='scan' doc='Name of Robot' />
 	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
-	<node pkg="canyon_run" name="spawnrobot" type="spawnRobot.py" output="screen">
+	<node pkg="canyon_run" name="spawnrobot2" type="spawnRobot.py" output="screen">
 		<param name='roboname' value="$(arg roboname)" />
 	</node>
-	<node pkg="ASR_battle_bots" name="stateTracker" type="stateTracker.py" output="screen"> 
-		<param name='roboname' value="$(arg roboname)" />
-		<param name='lasername' value="$(arg lasername)" />
-	</node>
- 	<node pkg="ASR_battle_bots" name="mostOpenPath" type="mostOpenPath.py" output="screen"> 
+	<node pkg="ASR_battle_bots" name="stateTracker2" type="stateTracker.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
 	</node>
-	<node pkg="ASR_battle_bots" name="wallFollowRight" type="wallFollowRight.py" output="screen"> 
+ 	<node pkg="ASR_battle_bots" name="mostOpenPath2" type="mostOpenPath.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
 	</node>
-	<node pkg="ASR_battle_bots" name="wallFollowLeft" type="wallFollowLeft.py" output="screen"> 
+	<node pkg="ASR_battle_bots" name="wallFollowRight2" type="wallFollowRight.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
 	</node>
-	<node pkg="ASR_battle_bots" name="grabPoint" type="grabPoint.py" output="screen"> 
+	<node pkg="ASR_battle_bots" name="wallFollowLeft2" type="wallFollowLeft.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="grabPoint2" type="grabPoint.py" output="screen"> 
 		<param name='roboname' value="$(arg roboname)" />
 		<param name='lasername' value="$(arg lasername)" />
 	</node>
