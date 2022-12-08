@@ -1,0 +1,32 @@
+<launch>
+	<arg name='roboname' default='jarboe' doc='Name of Robot' />
+	<arg name='lasername' default='scan' doc='Name of Robot' />
+	<!--<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />-->
+	<node pkg="canyon_run" name="spawnrobot2" type="spawnRobot.py" output="screen">
+		<param name='roboname' value="$(arg roboname)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="stateTracker3" type="stateTracker.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+ 	<node pkg="ASR_battle_bots" name="mostOpenPath3" type="mostOpenPath.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="wallFollowRight3" type="wallFollowRight.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="wallFollowLeft3" type="wallFollowLeft.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="grabPoint3" type="grabPoint.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+	<node pkg="ASR_battle_bots" name="attackPlayer3" type="attackPlayer.py" output="screen"> 
+		<param name='roboname' value="$(arg roboname)" />
+		<param name='lasername' value="$(arg lasername)" />
+	</node>
+</launch>
